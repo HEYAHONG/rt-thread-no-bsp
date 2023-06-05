@@ -23,5 +23,5 @@ rt-thread官方的做法是源代码中包含BSP代码,而我个人的习惯是D
 
 1. 将某一芯片的bsp目录的代码单独拷贝出来。
 2. 将本仓库下载到拷贝后的目录。
-3. 修改SConstruct是RTT_ROOT变量指向本仓库下的rt-thread-no-bsp目录。（也可在使用scons时设置RTT_ROOT到本仓库下的rt-thread-no-bsp目录）。
+3. 修改SConstruct是RTT_ROOT变量指向本仓库下的rt-thread-no-bsp目录。（也可在使用scons时设置RTT_ROOT环境变量到本仓库下的rt-thread-no-bsp目录）。
 
