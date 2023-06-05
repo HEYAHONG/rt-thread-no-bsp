@@ -90,7 +90,7 @@ echo -e  "\033[44;37m当前分支为${GIT_BRANCH}\033[40;37m"
 cd ${ROOT_PATH}/rt-thread
 echo -e  "\033[44;37m获取rt-thread源代码\033[40;37m"
 git fetch
-git checkout ${GIT_BRANCH}
+git checkout --force ${GIT_BRANCH}
 git clean -x -f -d
 git pull
 echo `git rev-parse --verify HEAD` > ${ROOT_PATH}/version
