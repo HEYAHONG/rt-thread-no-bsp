@@ -12,18 +12,28 @@ def add_summary(text):
     os.system(f'echo "{text}" >> $GITHUB_STEP_SUMMARY ;')
 
 
-def run_cmd(cmd):
+def run_cmd(cmd, output_info=True):
     """
     run command and return output and result.
     """
     print('\033[1;32m' + cmd + '\033[0m')
-    res = os.system(cmd + " > output.txt 2>&1")
+
+    output_str_list = []
+
+    if output_info:
+        res = os.system(cmd + " > output.txt 2>&1")
+    else:
+        res = os.system(cmd + " > /dev/null 2>output.txt")
+
     with open("output.txt", "r") as file:
-        output = file.readlines()
-    for line in output:
+        output_str_list = file.readlines()
+
+    for line in output_str_list:
         print(line, end='')
+
     os.remove("output.txt")
-    return output, res
+
+    return output_str_list, res
 
 
 def build_bsp(bsp):
@@ -31,18 +41,17 @@ def build_bsp(bsp):
     build bsp.
 
     cd {rtt_root}
-    scons -C bsp/{bsp} --pyconfig-silent
+    scons -C bsp/{bsp} --pyconfig-silent > /dev/null
 
     cd {rtt_root}/bsp/{bsp}
-    pkgs --upgrade-script-force
-    pkgs --update
+    pkgs --update > /dev/null
     pkgs --list
 
     cd {rtt_root}
-    scons -C bsp/{bsp} -j{nproc} --debug=time
+    scons -C bsp/{bsp} -j{nproc}
 
     cd {rtt_root}/bsp/{bsp}
-    scons -c
+    scons -c > /dev/null
     rm -rf packages
 
     """
@@ -50,34 +59,26 @@ def build_bsp(bsp):
     os.chdir(rtt_root)
     if os.path.exists(f"{rtt_root}/bsp/{bsp}/Kconfig"):
         os.chdir(rtt_root)
-        run_cmd(f'scons -C bsp/{bsp} --pyconfig-silent')
+        run_cmd(f'scons -C bsp/{bsp} --pyconfig-silent', output_info=False)
 
         os.chdir(f'{rtt_root}/bsp/{bsp}')
-        run_cmd('pkgs --upgrade-script-force')
-        run_cmd('pkgs --update')
+        run_cmd('pkgs --update', output_info=False)
         run_cmd('pkgs --list')
 
         nproc = multiprocessing.cpu_count()
         os.chdir(rtt_root)
-        output, res = run_cmd(f'scons -C bsp/{bsp} -j{nproc} --debug=time')
+        __, res = run_cmd(f'scons -C bsp/{bsp} -j{nproc}')
 
-        total_time = 0
-        for line in output:
-            pattern = r"Total command execution time: (\d+\.\d+) seconds"
-            match = re.search(pattern, line)
-            if match:
-                total_time = match.group(1)
-                break
         if res != 0:
             success = False
 
     os.chdir(f'{rtt_root}/bsp/{bsp}')
-    run_cmd('scons -c')
+    run_cmd('scons -c', output_info=False)
 
     pkg_dir = os.path.join(rtt_root, 'bsp', bsp, 'packages')
     shutil.rmtree(pkg_dir, ignore_errors=True)
 
-    return success, total_time
+    return success
 
 
 def append_file(source_file, destination_file):
@@ -109,12 +110,12 @@ def build_bsp_attachconfig(bsp, attach_file):
 
     append_file(attach_file, config_file)
 
-    res, total_time = build_bsp(bsp)
+    res = build_bsp(bsp)
 
     shutil.copyfile(config_bacakup, config_file)
     os.remove(config_bacakup)
 
-    return res, total_time
+    return res
 
 
 if __name__ == "__main__":
@@ -134,13 +135,13 @@ if __name__ == "__main__":
     for bsp in srtt_bsp:
         count += 1
         print(f"::group::Compiling BSP: =={count}=== {bsp} ====")
-        res, total_time = build_bsp(bsp)
+        res = build_bsp(bsp)
         if not res:
             print(f"::error::build {bsp} failed")
-            add_summary(f"- ❌ build {bsp} failed in {total_time} s.")
+            add_summary(f"- ❌ build {bsp} failed.")
             failed += 1
         else:
-            add_summary(f'- ✅ build {bsp} success in {total_time} s.')
+            add_summary(f'- ✅ build {bsp} success.')
         print("::endgroup::")
 
         attach_dir = os.path.join(rtt_root, 'bsp', bsp, '.ci/attachconfig')
@@ -149,13 +150,13 @@ if __name__ == "__main__":
             count += 1
             attach = os.path.basename(attach_file)
             print(f"::group::\tCompiling BSP: =={count}=== {bsp} {attach}===")
-            res, total_time = build_bsp_attachconfig(bsp, attach_file)
+            res = build_bsp_attachconfig(bsp, attach_file)
             if not res:
                 print(f"::error::build {bsp} {attach} failed.")
-                add_summary(f'\t- ❌ build {attach} failed in {total_time} s.')
+                add_summary(f'\t- ❌ build {attach} failed.')
                 failed += 1
             else:
-                add_summary(f'\t- ✅ build {attach} success in {total_time} s.')
+                add_summary(f'\t- ✅ build {attach} success.')
             print("::endgroup::")
 
     exit(failed)
