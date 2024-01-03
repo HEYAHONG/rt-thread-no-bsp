@@ -54,6 +54,7 @@
  * 2023-10-11     zmshahaha    move specific devices related and driver to components/drivers
  * 2023-11-21     Meco Man     add RT_USING_NANO macro
  * 2023-12-18     xqyjlj       add rt_always_inline
+ * 2023-12-22     Shell        Support hook list
  */
 
 #ifndef __RT_DEF_H__
@@ -198,6 +199,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define rt_used                     __attribute__((used))
 #define rt_align(n)                 __attribute__((aligned(n)))
 #define rt_weak                     __attribute__((weak))
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static __inline
 #define rt_always_inline            rt_inline
 #elif defined (__IAR_SYSTEMS_ICC__)     /* for IAR Compiler */
@@ -206,6 +209,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define PRAGMA(x)                   _Pragma(#x)
 #define rt_align(n)                    PRAGMA(data_alignment=n)
 #define rt_weak                     __weak
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static inline
 #define rt_always_inline            rt_inline
 #elif defined (__GNUC__)                /* GNU GCC Compiler */
@@ -215,6 +220,7 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define rt_used                     __attribute__((used))
 #define rt_align(n)                 __attribute__((aligned(n)))
 #define rt_weak                     __attribute__((weak))
+#define rt_typeof                   __typeof__
 #define rt_noreturn                 __attribute__ ((noreturn))
 #define rt_inline                   static __inline
 #define rt_always_inline            static inline __attribute__((always_inline))
@@ -223,6 +229,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define rt_used                     __attribute__((used))
 #define rt_align(n)                 __attribute__((aligned(n)))
 #define rt_weak                     __attribute__((weak))
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static inline
 #define rt_always_inline            rt_inline
 #elif defined (_MSC_VER)
@@ -230,6 +238,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define rt_used
 #define rt_align(n)                 __declspec(align(n))
 #define rt_weak
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static __inline
 #define rt_always_inline            rt_inline
 #elif defined (__TI_COMPILER_VERSION__)
@@ -249,6 +259,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #else
 #define rt_weak
 #endif
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static inline
 #define rt_always_inline            rt_inline
 #elif defined (__TASKING__)
@@ -257,6 +269,8 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define PRAGMA(x)                   _Pragma(#x)
 #define rt_align(n)                 __attribute__((__align(n)))
 #define rt_weak                     __attribute__((weak))
+#define rt_typeof                   typeof
+#define rt_noreturn
 #define rt_inline                   static inline
 #define rt_always_inline            rt_inline
 #else
@@ -400,6 +414,7 @@ typedef int (*init_fn_t)(void);
 #define RT_ENOSPC                       ENOSPC          /**< No space left */
 #define RT_EPERM                        EPERM           /**< Operation not permitted */
 #define RT_EFAULT                       EFAULT          /**< Bad address */
+#define RT_ENOBUFS                      ENOBUFS         /**< No buffer space is available */
 #define RT_ETRAP                        254             /**< Trap event */
 #else
 #define RT_EOK                          0               /**< There is no error */
@@ -418,6 +433,7 @@ typedef int (*init_fn_t)(void);
 #define RT_EPERM                        13              /**< Operation not permitted */
 #define RT_ETRAP                        14              /**< Trap event */
 #define RT_EFAULT                       15              /**< Bad address */
+#define RT_ENOBUFS                      16              /**< No buffer space is available */
 #endif /* defined(RT_USING_LIBC) && !defined(RT_USING_NANO) */
 
 /**@}*/
@@ -587,10 +603,24 @@ struct rt_object_information
  * The hook function call macro
  */
 #ifndef RT_USING_HOOK
-    #define __ON_HOOK_ARGS(__hook, argv)
-    #define RT_OBJECT_HOOK_CALL(func, argv)
+#define RT_OBJECT_HOOK_CALL(func, argv)
+
 #else
-    #define RT_OBJECT_HOOK_CALL(func, argv)         __on_##func argv
+
+/**
+ * @brief Add hook point in the routines
+ * @note Usage:
+ * void foo() {
+ *     do_something();
+ *
+ *     RT_OBJECT_HOOK_CALL(foo);
+ *
+ *     do_other_things();
+ * }
+ */
+#define _RT_OBJECT_HOOK_CALL(func, argv) __ON_HOOK_ARGS(func, argv)
+#define RT_OBJECT_HOOK_CALL(func, argv)  _RT_OBJECT_HOOK_CALL(func, argv)
+
     #ifdef RT_HOOK_USING_FUNC_PTR
         #define __ON_HOOK_ARGS(__hook, argv)        do {if ((__hook) != RT_NULL) __hook argv; } while (0)
     #else
@@ -598,16 +628,127 @@ struct rt_object_information
     #endif /* RT_HOOK_USING_FUNC_PTR */
 #endif /* RT_USING_HOOK */
 
-#ifndef __on_rt_interrupt_switch_hook
-    #define __on_rt_interrupt_switch_hook()         __ON_HOOK_ARGS(rt_interrupt_switch_hook, ())
-#endif
-#ifndef __on_rt_malloc_hook
-    #define __on_rt_malloc_hook(addr, size)         __ON_HOOK_ARGS(rt_malloc_hook, (addr, size))
-#endif
-#ifndef __on_rt_free_hook
-    #define __on_rt_free_hook(rmem)                 __ON_HOOK_ARGS(rt_free_hook, (rmem))
-#endif
+#ifdef RT_USING_HOOKLIST
 
+/**
+ * @brief Add declaration for hook list types.
+ *
+ * @note Usage:
+ * This is typically used in your header. In foo.h using this like:
+ *
+ * ```foo.h
+ *     typedef void (*bar_hook_proto_t)(arguments...);
+ *     RT_OBJECT_HOOKLIST_DECLARE(bar_hook_proto_t, bar_myhook);
+ * ```
+ */
+#define RT_OBJECT_HOOKLIST_DECLARE(handler_type, name) \
+    typedef struct name##_hooklistnode                 \
+    {                                                  \
+        handler_type handler;                          \
+        rt_list_t list_node;                           \
+    } *name##_hooklistnode_t;                          \
+    extern volatile rt_ubase_t name##_nested;          \
+    void name##_sethook(name##_hooklistnode_t node);   \
+    void name##_rmhook(name##_hooklistnode_t node)
+
+/**
+ * @brief Add declaration for hook list node.
+ *
+ * @note Usage
+ * You can add a hook like this.
+ *
+ * ```addhook.c
+ * void myhook(arguments...) { do_something(); }
+ * RT_OBJECT_HOOKLIST_DEFINE_NODE(bar_myhook, myhook_node, myhook);
+ *
+ * void addhook(void)
+ * {
+ *      bar_myhook_sethook(myhook);
+ * }
+ * ```
+ *
+ * BTW, you can also find examples codes under
+ * `examples/utest/testcases/kernel/hooklist_tc.c`.
+ */
+#define RT_OBJECT_HOOKLIST_DEFINE_NODE(hookname, nodename, hooker_handler) \
+    struct hookname##_hooklistnode nodename = {                            \
+        .handler = hooker_handler,                                         \
+        .list_node = RT_LIST_OBJECT_INIT(nodename.list_node),              \
+    };
+
+/**
+ * @note Usage
+ * Add this macro to the source file where your hook point is inserted.
+ */
+#define RT_OBJECT_HOOKLIST_DEFINE(name)                                      \
+    static rt_list_t name##_hooklist = RT_LIST_OBJECT_INIT(name##_hooklist); \
+    static struct rt_spinlock name##lock = RT_SPINLOCK_INIT;                 \
+    volatile rt_ubase_t name##_nested = 0;                                   \
+    void name##_sethook(name##_hooklistnode_t node)                          \
+    {                                                                        \
+        rt_ubase_t level = rt_spin_lock_irqsave(&name##lock);                \
+        while (name##_nested)                                                \
+        {                                                                    \
+            rt_spin_unlock_irqrestore(&name##lock, level);                   \
+            level = rt_spin_lock_irqsave(&name##lock);                       \
+        }                                                                    \
+        rt_list_insert_before(&name##_hooklist, &node->list_node);           \
+        rt_spin_unlock_irqrestore(&name##lock, level);                       \
+    }                                                                        \
+    void name##_rmhook(name##_hooklistnode_t node)                           \
+    {                                                                        \
+        rt_ubase_t level = rt_spin_lock_irqsave(&name##lock);                \
+        while (name##_nested)                                                \
+        {                                                                    \
+            rt_spin_unlock_irqrestore(&name##lock, level);                   \
+            level = rt_spin_lock_irqsave(&name##lock);                       \
+        }                                                                    \
+        rt_list_remove(&node->list_node);                                    \
+        rt_spin_unlock_irqrestore(&name##lock, level);                       \
+    }
+
+/**
+ * @brief Add hook list point in the routines. Multiple hookers in the list will
+ *        be called one by one starting from head node.
+ *
+ * @note Usage:
+ * void foo() {
+ *     do_something();
+ *
+ *     RT_OBJECT_HOOKLIST_CALL(foo);
+ *
+ *     do_other_things();
+ * }
+ */
+#define _RT_OBJECT_HOOKLIST_CALL(nodetype, nested, list, lock, argv) \
+    do                                                               \
+    {                                                                \
+        nodetype iter;                                               \
+        rt_ubase_t level = rt_spin_lock_irqsave(&lock);              \
+        nested += 1;                                                 \
+        rt_spin_unlock_irqrestore(&lock, level);                     \
+        if (!rt_list_isempty(&list))                                 \
+        {                                                            \
+            rt_list_for_each_entry(iter, &list, list_node)           \
+            {                                                        \
+                iter->handler argv;                                  \
+            }                                                        \
+        }                                                            \
+        level = rt_spin_lock_irqsave(&lock);                         \
+        nested -= 1;                                                 \
+        rt_spin_unlock_irqrestore(&lock, level);                     \
+    } while (0)
+#define RT_OBJECT_HOOKLIST_CALL(name, argv)                        \
+    _RT_OBJECT_HOOKLIST_CALL(name##_hooklistnode_t, name##_nested, \
+                             name##_hooklist, name##lock, argv)
+
+#else
+
+#define RT_OBJECT_HOOKLIST_DECLARE(handler_type, name)
+#define RT_OBJECT_HOOKLIST_DEFINE_NODE(hookname, nodename, hooker_handler)
+#define RT_OBJECT_HOOKLIST_DEFINE(name)
+#define RT_OBJECT_HOOKLIST_CALL(name, argv)
+#endif /* RT_USING_HOOKLIST */
 
 /**@}*/
 
