@@ -1,18 +1,16 @@
 from building import *
 
+group = []
 objs = []
 
-if not GetDepend(['RT_USING_OFW']):
-    Return('objs')
+if not GetDepend(['RT_USING_PINCTRL']):
+    Return('group')
 
-cwd     = GetCurrentDir()
-list    = os.listdir(cwd)
-CPPPATH = [cwd, cwd + '/../include']
+cwd = GetCurrentDir()
+list = os.listdir(cwd)
+CPPPATH = [cwd + '/../include']
 
-src     = Glob('*.c')
-
-if GetDepend('RT_USING_PIC') == False:
-    SrcRemove(src, ['irq.c'])
+src = ['pinctrl.c']
 
 group = DefineGroup('DeviceDrivers', src, depend = [''], CPPPATH = CPPPATH)
 
