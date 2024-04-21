@@ -604,43 +604,12 @@ rt_thread_t rt_thread_defunct_dequeue(void);
  * spinlock
  */
 struct rt_spinlock;
-#ifdef RT_USING_SMP
 
 void rt_spin_lock_init(struct rt_spinlock *lock);
 void rt_spin_lock(struct rt_spinlock *lock);
 void rt_spin_unlock(struct rt_spinlock *lock);
 rt_base_t rt_spin_lock_irqsave(struct rt_spinlock *lock);
 void rt_spin_unlock_irqrestore(struct rt_spinlock *lock, rt_base_t level);
-#else
-
-rt_inline void rt_spin_lock_init(struct rt_spinlock *lock)
-{
-    RT_UNUSED(lock);
-}
-rt_inline void rt_spin_lock(struct rt_spinlock *lock)
-{
-    RT_UNUSED(lock);
-    rt_enter_critical();
-}
-rt_inline void rt_spin_unlock(struct rt_spinlock *lock)
-{
-    RT_UNUSED(lock);
-    rt_exit_critical();
-}
-rt_inline rt_base_t rt_spin_lock_irqsave(struct rt_spinlock *lock)
-{
-    rt_base_t level;
-    RT_UNUSED(lock);
-    level = rt_hw_interrupt_disable();
-    return level;
-}
-rt_inline void rt_spin_unlock_irqrestore(struct rt_spinlock *lock, rt_base_t level)
-{
-    RT_UNUSED(lock);
-    rt_hw_interrupt_enable(level);
-}
-
-#endif /* RT_USING_SMP */
 
 /**@}*/
 
@@ -758,16 +727,6 @@ rt_device_t rt_console_get_device(void);
     rt_inline void *rt_console_current_user(void) { return RT_NULL; }
 #endif /* RT_USING_THREADSAFE_PRINTF */
 #endif /* defined(RT_USING_DEVICE) && defined(RT_USING_CONSOLE) */
-
-rt_err_t rt_get_errno(void);
-void rt_set_errno(rt_err_t no);
-int *_rt_errno(void);
-const char *rt_strerror(rt_err_t error);
-#if !defined(RT_USING_NEWLIBC) && !defined(_WIN32)
-#ifndef errno
-#define errno    *_rt_errno()
-#endif
-#endif /* !defined(RT_USING_NEWLIBC) && !defined(_WIN32) */
 
 int __rt_ffs(int value);
 
