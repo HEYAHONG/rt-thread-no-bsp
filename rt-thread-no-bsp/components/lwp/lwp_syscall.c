@@ -4478,8 +4478,9 @@ sysret_t sys_mkdir(const char *path, mode_t mode)
 
 sysret_t sys_rmdir(const char *path)
 {
-#ifdef ARCH_MM_MMU
     int err = 0;
+    int ret = 0;
+#ifdef ARCH_MM_MMU
     int len = 0;
     char *kpath = RT_NULL;
 
@@ -4501,14 +4502,22 @@ sysret_t sys_rmdir(const char *path)
         return -EINVAL;
     }
 
-    err = rmdir(kpath);
+    ret = rmdir(kpath);
+    if(ret < 0)
+    {
+        err = GET_ERRNO();
+    }
 
     kmem_put(kpath);
 
-    return (err < 0 ? GET_ERRNO() : err);
+    return (err < 0 ? err : ret);
 #else
-    int ret = rmdir(path);
-    return (ret < 0 ? GET_ERRNO() : ret);
+    ret = rmdir(path);
+    if(ret < 0)
+    {
+        err = GET_ERRNO();
+    }
+    return (err < 0 ? err : ret);
 #endif
 }
 
@@ -5004,7 +5013,8 @@ ssize_t sys_readlink(char* path, char *buf, size_t bufsz)
         err = dfs_file_readlink(copy_path, link_fn, DFS_PATH_MAX);
         if (err > 0)
         {
-            rtn = lwp_put_to_user(buf, link_fn, bufsz > err ? err : bufsz - 1);
+            buf[bufsz > err ? err : bufsz] = '\0';
+            rtn = lwp_put_to_user(buf, link_fn, bufsz > err ? err : bufsz);
         }
         else
         {
@@ -5846,7 +5856,7 @@ sysret_t sys_umount2(char *__special_file, int __flags)
 sysret_t sys_link(const char *existing, const char *new)
 {
     int ret = -1;
-
+    int err = 0;
 #ifdef RT_USING_DFS_V2
 #ifdef ARCH_MM_MMU
     int len = 0;
@@ -5893,6 +5903,10 @@ sysret_t sys_link(const char *existing, const char *new)
     }
 
     ret = dfs_file_link(kexisting, knew);
+    if(ret  < 0)
+    {
+        err = GET_ERRNO();
+    }
 
     kmem_put(knew);
     kmem_put(kexisting);
@@ -5901,36 +5915,40 @@ sysret_t sys_link(const char *existing, const char *new)
 #endif
 #else
     SET_ERRNO(EFAULT);
+    err = GET_ERRNO();
 #endif
 
-    return (ret < 0 ? GET_ERRNO() : ret);
+    return (err < 0 ? err : ret);
 }
 
 sysret_t sys_symlink(const char *existing, const char *new)
 {
     int ret = -1;
-
+    int err = 0 ;
 #ifdef ARCH_MM_MMU
-    int err;
 
-    err = lwp_user_strlen(existing);
-    if (err <= 0)
+    ret = lwp_user_strlen(existing);
+    if (ret <= 0)
     {
         return -EFAULT;
     }
 
-    err = lwp_user_strlen(new);
-    if (err <= 0)
+    ret = lwp_user_strlen(new);
+    if (ret <= 0)
     {
         return -EFAULT;
     }
 #endif
 #ifdef RT_USING_DFS_V2
     ret = dfs_file_symlink(existing, new);
+    if(ret < 0)
+    {
+        err = GET_ERRNO();
+    }
 #else
     SET_ERRNO(EFAULT);
 #endif
-    return (ret < 0 ? GET_ERRNO() : ret);
+    return (err < 0 ? err : ret);
 }
 
 sysret_t sys_eventfd2(unsigned int count, int flags)
