@@ -89,6 +89,16 @@ extern "C" {
 #include "drivers/pic.h"
 #endif /* RT_USING_PIC */
 
+#ifdef RT_USING_PCI
+#include "drivers/pci.h"
+#ifdef RT_PCI_MSI
+#include "drivers/pci_msi.h"
+#endif /* RT_PCI_MSI */
+#ifdef RT_PCI_ENDPOINT
+#include "drivers/pci_endpoint.h"
+#endif /* RT_PCI_ENDPOINT */
+#endif /* RT_USING_PCI */
+
 #ifdef RT_USING_REGULATOR
 #include "drivers/regulator.h"
 #endif /* RT_USING_REGULATOR */
@@ -104,6 +114,10 @@ extern "C" {
 #ifdef RT_MFD_SYSCON
 #include "drivers/syscon.h"
 #endif /* RT_MFD_SYSCON */
+
+#ifdef RT_USING_THERMAL
+#include "drivers/thermal.h"
+#endif /* RT_USING_THERMAL */
 #endif /* RT_USING_DM */
 
 #ifdef RT_USING_RTC
@@ -138,6 +152,9 @@ extern "C" {
 #include "drivers/dev_serial_v2.h"
 #else
 #include "drivers/dev_serial.h"
+#ifdef RT_USING_SERIAL_BYPASS
+#include "drivers/serial_bypass.h"
+#endif /* RT_USING_SERIAL_BYPASS */
 #endif
 #endif /* RT_USING_SERIAL */
 

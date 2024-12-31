@@ -18,7 +18,7 @@
 #include <drivers/ofw.h>
 #include <drivers/mailbox.h>
 #include <drivers/platform.h>
-#include <drivers/core/rtdm.h>
+#include <drivers/core/dm.h>
 
 static struct rt_spinlock mbox_ops_lock = {};
 static rt_list_t mbox_nodes = RT_LIST_OBJECT_INIT(mbox_nodes);
@@ -253,7 +253,11 @@ struct rt_mbox_chan *rt_mbox_request_by_index(struct rt_mbox_client *client, int
 
     if (!rt_ofw_data(ctrl_np))
     {
+        rt_spin_unlock(&mbox_ops_lock);
+
         rt_platform_ofw_request(ctrl_np);
+
+        rt_spin_lock(&mbox_ops_lock);
     }
 
     ctrl = rt_ofw_data(ctrl_np);
