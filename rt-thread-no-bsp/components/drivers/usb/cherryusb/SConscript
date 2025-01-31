@@ -28,6 +28,8 @@ if GetDepend(['RT_CHERRYUSB_DEVICE']):
     if GetDepend(['RT_CHERRYUSB_DEVICE_SPEED_HS']):
         CPPDEFINES+=['CONFIG_USB_HS']
 
+    if GetDepend(['RT_CHERRYUSB_DEVICE_NRF5X']):
+        src += Glob('port/nrf5x/usb_dc_nrf5x.c')
     if GetDepend(['RT_CHERRYUSB_DEVICE_FSDEV']):
         src += Glob('port/fsdev/usb_dc_fsdev.c')
     if GetDepend(['RT_CHERRYUSB_DEVICE_DWC2_ST']):
@@ -45,6 +47,9 @@ if GetDepend(['RT_CHERRYUSB_DEVICE']):
     if GetDepend(['RT_CHERRYUSB_DEVICE_DWC2_HC']):
         src += Glob('port/dwc2/usb_dc_dwc2.c')
         src += Glob('port/dwc2/usb_glue_hc.c')
+    if GetDepend(['RT_CHERRYUSB_DEVICE_DWC2_KENDRYTE']):
+        src += Glob('port/dwc2/usb_dc_dwc2.c')
+        src += Glob('port/dwc2/usb_glue_kendryte.c')
     if GetDepend(['RT_CHERRYUSB_DEVICE_DWC2_CUSTOM']):
         src += Glob('port/dwc2/usb_dc_dwc2.c')
     if GetDepend(['RT_CHERRYUSB_DEVICE_MUSB_ES']):
@@ -177,6 +182,9 @@ if GetDepend(['RT_CHERRYUSB_HOST']):
     if GetDepend(['RT_CHERRYUSB_HOST_DWC2_ESP']):
         src += Glob('port/dwc2/usb_hc_dwc2.c')
         src += Glob('port/dwc2/usb_glue_esp.c')
+    if GetDepend(['RT_CHERRYUSB_HOST_DWC2_KENDRYTE']):
+        src += Glob('port/dwc2/usb_hc_dwc2.c')
+        src += Glob('port/dwc2/usb_glue_kendryte.c')
     if GetDepend(['RT_CHERRYUSB_HOST_DWC2_CUSTOM']):
         src += Glob('port/dwc2/usb_hc_dwc2.c')
     if GetDepend(['RT_CHERRYUSB_HOST_MUSB_STANDARD']):

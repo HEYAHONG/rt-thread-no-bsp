@@ -231,7 +231,7 @@ static void utest_do_run(const char *utest_name)
             {
                 if (tc_table[i].init() != RT_EOK)
                 {
-                    LOG_E("[  FAILED  ] [ result   ] testcase (%s)", tc_table[i].name);
+                    LOG_E("[  FAILED  ] [ result   ] testcase init (%s)", tc_table[i].name);
                     goto __tc_continue;
                 }
             }
@@ -259,7 +259,7 @@ static void utest_do_run(const char *utest_name)
             {
                 if (tc_table[i].cleanup() != RT_EOK)
                 {
-                    LOG_E("[  FAILED  ] [ result   ] testcase (%s)", tc_table[i].name);
+                    LOG_E("[  FAILED  ] [ result   ] testcase cleanup (%s)", tc_table[i].name);
                     goto __tc_continue;
                 }
             }
@@ -316,15 +316,15 @@ static void utest_thread_create(const char *utest_name)
     }
 }
 
-#ifdef RT_USING_CI_ACTION
-static int utest_ci_action(void)
+#ifdef RT_UTEST_USING_AUTO_RUN
+static int utest_auto_run(void)
 {
     tc_loop = 1;
     utest_thread_create(RT_NULL);
     return RT_EOK;
 }
-INIT_APP_EXPORT(utest_ci_action);
-#endif /* RT_USING_CI_ACTION */
+INIT_APP_EXPORT(utest_auto_run);
+#endif /* RT_UTEST_USING_AUTO_RUN */
 
 int utest_testcase_run(int argc, char** argv)
 {
@@ -382,7 +382,7 @@ utest_t utest_handle_get(void)
 
 void utest_unit_run(test_unit_func func, const char *unit_func_name)
 {
-    // LOG_I("[==========] utest unit name: (%s)", unit_func_name);
+    LOG_I("[==========] utest unit name: (%s)", unit_func_name);
     local_utest.error = UTEST_PASSED;
     local_utest.passed_num = 0;
     local_utest.failed_num = 0;
