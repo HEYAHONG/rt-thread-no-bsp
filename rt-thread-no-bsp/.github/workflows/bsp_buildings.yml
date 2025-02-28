@@ -93,6 +93,7 @@ jobs:
                 - "hc32l196"
                 - "mm32/mm32f3270-100ask-pitaya"
                 - "mm32f327x"
+                - "mm32f526x"
                 - "mm32l07x"
                 - "sam7x"
                 - "hk32/hk32f030c8-mini"
@@ -108,7 +109,7 @@ jobs:
                 - "hc32l136"
                 - "yichip/yc3121-pos"
                 - "fm33lc026"
-         -  RTT_BSP: "stm32l4_f0_f1" 
+         -  RTT_BSP: "stm32l4" 
             RTT_TOOL_CHAIN: "sourcery-arm"
             SUB_RTT_BSP: 
                 - "stm32/stm32l4r5-st-nucleo"
@@ -129,6 +130,9 @@ jobs:
                 - "stm32/stm32l496-ali-developer"
                 - "stm32/stm32l496-st-nucleo"
                 - "stm32/stm32l496-st-discovery"
+         -  RTT_BSP: "stm32f0_f1" 
+            RTT_TOOL_CHAIN: "sourcery-arm"
+            SUB_RTT_BSP: 
                 - "stm32/stm32f072-st-nucleo"
                 - "stm32/stm32f091-st-nucleo"
                 - "stm32/stm32f103-100ask-mini"
@@ -190,6 +194,7 @@ jobs:
                 - "stm32/stm32h563-st-nucleo"
                 - "stm32/stm32h503-st-nucleo"
                 - "stm32/stm32h723-st-nucleo"
+                - "stm32/stm32h730-esphosted-evb"
                 - "stm32/stm32h743-armfly-v7"
                 - "stm32/stm32h743-atk-apollo"
                 - "stm32/stm32h743-openmv-h7plus"
@@ -232,6 +237,7 @@ jobs:
                 - "nxp/mcx/mcxn/frdm-mcxn947"
                 - "nxp/mcx/mcxn/frdm-mcxn236"
                 - "nxp/mcx/mcxa/frdm-mcxa153"
+                - "nxp/mcx/mcxa/frdm-mcxa156"
                 - "renesas/ebf_qi_min_6m5"
                 - "renesas/ra6m4-cpk"
                 - "renesas/ra6m4-iot"
@@ -245,6 +251,7 @@ jobs:
                 - "renesas/ra8d1-vision-board"
                 - "renesas/rzt2m_rsk"
                 - "renesas/rzn2l_rsk"
+                - "renesas/rzn2l_etherkit"
                 - "frdm-k64f"
                 - "xplorer4330/M4"
          -  RTT_BSP: "nuvoton" 
@@ -345,11 +352,14 @@ jobs:
                 - "raspberry-pi/raspi3-64"
                 - "raspberry-pi/raspi4-64"
                 #- "rockchip/rk3568"   too long
-                - "phytium/aarch64"
+                #- "phytium/aarch64"   too long
          -  RTT_BSP: "riscv-none" 
             RTT_TOOL_CHAIN: "sourcery-riscv-none-embed"
             SUB_RTT_BSP:  
                 - "k210"
+                - "wch/risc-v/ch32v208w-r0"
+                - "wch/risc-v/ch32v307v-r1"
+                - "wch/risc-v/yd-ch32v307vct6"
          -  RTT_BSP: "riscv64-unknown" 
             RTT_TOOL_CHAIN: "sourcery-riscv64-unknown-elf"
             SUB_RTT_BSP:  
@@ -405,6 +415,7 @@ jobs:
           wget https://raw.githubusercontent.com/RT-Thread/env/master/install_ubuntu.sh
           chmod 777 install_ubuntu.sh
           ./install_ubuntu.sh
+          pip install -r tools/requirements.txt
           git config --global http.postBuffer 524288000
           echo "RTT_ROOT=${{ github.workspace }}" >> $GITHUB_ENV
           echo "RTT_CC=gcc" >> $GITHUB_ENV

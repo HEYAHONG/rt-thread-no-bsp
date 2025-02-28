@@ -23,7 +23,7 @@
 #define device_list(dev)            (dev)->parent.parent.list
 #define device_foreach(dev, nodes)  rt_list_for_each_entry(dev, nodes, parent.parent.list)
 
-static struct rt_spinlock nodes_lock = {};
+static RT_DEFINE_SPINLOCK(nodes_lock);
 static rt_list_t thermal_zone_device_nodes = RT_LIST_OBJECT_INIT(thermal_zone_device_nodes);
 static rt_list_t thermal_cooling_device_nodes = RT_LIST_OBJECT_INIT(thermal_cooling_device_nodes);
 static rt_list_t thermal_cooling_governor_nodes = RT_LIST_OBJECT_INIT(thermal_cooling_governor_nodes);
@@ -638,10 +638,6 @@ void rt_thermal_zone_device_update(struct rt_thermal_zone_device *zdev, rt_ubase
             int trip_low;
             rt_bool_t low_set = RT_FALSE;
 
-            if (i >= zdev->trips_nr)
-            {
-                goto _call_notifier;
-            }
             rt_memcpy(&trip, &zdev->trips[i], sizeof(trip));
 
             trip_low = trip.temperature - trip.hysteresis;
